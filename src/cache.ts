@@ -1,7 +1,8 @@
+import { linkToExecutor } from '@graphql-tools/utils';
+import { makeRemoteExecutableSchema as graphqlToolsMakeRemoteExecutableSchema } from '@graphql-tools/wrap';
 import { GraphQLSchema } from 'graphql'
 import { importSchema } from 'graphql-import'
 import { SharedLink } from './SharedLink'
-import { makeRemoteExecutableSchema } from 'graphql-tools'
 
 const typeDefsCache: { [schemaPath: string]: string } = {}
 const remoteSchemaCache: { [endpoint: string]: GraphQLSchema } = {}
@@ -33,10 +34,16 @@ export function getCachedRemoteSchema(
     return remoteSchemaCache[endpoint]
   }
 
-  const remoteSchema = makeRemoteExecutableSchema({
+  const remoteSchema = (() => {
+    const args = {
     link: link,
     schema: typeDefs,
-  })
+  };
+    if (args.link) {
+      args.link = linkToExecutor(args.link);
+    }
+    return graphqlToolsMakeRemoteExecutableSchema(args);
+  })()
 
   if (!disableCache) {
     remoteSchemaCache[endpoint] = remoteSchema
